@@ -1,7 +1,7 @@
 class AppDelegate
   def application(application, didFinishLaunchingWithOptions:launchOptions)
     rootViewController = UIViewController.alloc.init
-    rootViewController.title = 'rm_audio_recorder'
+    rootViewController.title = 'RM Audio Recorder'
     rootViewController.view.backgroundColor = UIColor.whiteColor
 
     navigationController = UINavigationController.alloc.initWithRootViewController(rootViewController)
