@@ -15,20 +15,24 @@ class RecorderController < UIViewController
 
     # Record Button
     @record_button = UIButton.buttonWithType(UIButtonTypeSystem)
+    @record_button.accessibilityLabel = "Record"
+    @record_button.backgroundColor = UIColor.redColor
     @record_button.frame = button_position
     @record_button.layer.cornerRadius = 20
-    @record_button.backgroundColor = UIColor.redColor
     @record_button.addTarget(self, action:"start_recording", forControlEvents:UIControlEventTouchUpInside)
     self.view.addSubview(@record_button)
 
     # Stop Button
     @stop_button = UIButton.buttonWithType(UIButtonTypeSystem)
-    @stop_button.frame = button_position
+    @stop_button.accessibilityLabel = "Stop"
     @stop_button.backgroundColor = UIColor.blackColor
+    @stop_button.frame = button_position
   end
 
   def start_recording
     # Show stop button
     self.view.addSubview(@stop_button)
+    @recording = true
   end
+
 end
