@@ -27,6 +27,7 @@ class RecorderController < UIViewController
     @stop_button.accessibilityLabel = "Stop"
     @stop_button.backgroundColor = UIColor.blackColor
     @stop_button.frame = button_position
+    @stop_button.addTarget(self, action:"stop_recording", forControlEvents:UIControlEventTouchUpInside)
   end
 
   def start_recording
@@ -35,4 +36,7 @@ class RecorderController < UIViewController
     @recording = true
   end
 
+  def stop_recording
+    @recording = false
+  end
 end
