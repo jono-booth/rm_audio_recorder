@@ -31,12 +31,13 @@ class RecorderController < UIViewController
   end
 
   def start_recording
-    # Show stop button
     self.view.addSubview(@stop_button)
+    @record_button.removeFromSuperview
     @recording = true
   end
 
   def stop_recording
+    self.view.addSubview(@record_button)
     @stop_button.removeFromSuperview
     @recording = false
   end
