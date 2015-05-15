@@ -37,6 +37,7 @@ class RecorderController < UIViewController
   end
 
   def stop_recording
+    @stop_button.removeFromSuperview
     @recording = false
   end
 end
