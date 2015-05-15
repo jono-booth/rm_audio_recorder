@@ -37,24 +37,26 @@ class RecorderController < UIViewController
     @play_button.sizeToFit
     @play_button.frame = play_button_position
     @play_button.addTarget(self, action:"play_recording", forControlEvents:UIControlEventTouchUpInside)
+    self.view.addSubview(@play_button)
   end
 
   def start_recording
     self.view.addSubview(@stop_button)
     @record_button.removeFromSuperview
 
-    session = AVAudioSession.sharedInstance
-
     err_ptr = Pointer.new :object
+
+    session = AVAudioSession.sharedInstance
     session.setCategory AVAudioSessionCategoryRecord, error:err_ptr
+
     return handleAudioError(err_ptr[0]) if err_ptr[0]
 
     @recorder = AVAudioRecorder.alloc.initWithURL local_file, settings:settings, error:err_ptr
     @recorder.setMeteringEnabled(true)
     @recorder.delegate = self;
 
-    # start recording
     if @recorder.prepareToRecord
+      @recording = true
       @recorder.record
     else
       raise "prepareToRecord " unless err_ptr[0]
@@ -64,14 +66,15 @@ class RecorderController < UIViewController
   end
 
   def stop_recording
+    @recording = false
     self.view.addSubview(@record_button)
-    self.view.addSubview(@play_button)
     @stop_button.removeFromSuperview
     @recorder.stop if @recorder
   end
 
   def play_recording
     BW::Media.play(local_file) do |media_player|
+      @playing = true
 #      media_player.view.frame = [[10, 100], [100, 100]]
 #      self.view.addSubview media_player.view
     end
