@@ -108,7 +108,6 @@ class RecorderController < UIViewController
     @stop_button.removeFromSuperview
     @recorder.stop if @recorder
     fetch_files
-    @table.reloadData
   end
 
   def play_recording filename
@@ -127,7 +126,6 @@ class RecorderController < UIViewController
       value = CMTimeGetSeconds(@player.currentTime)
       stop_at_end_time(value)
     end)
-#    @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
   end
 
   def save_clip
@@ -184,6 +182,7 @@ class RecorderController < UIViewController
   def fetch_files
     @file_manager ||= NSFileManager.defaultManager
     @recordings = @file_manager.contentsOfDirectoryAtPath(App.documents_path, error:nil)
+    @table.reloadData
   end
 
   def tableView(tableView, numberOfRowsInSection: section)
