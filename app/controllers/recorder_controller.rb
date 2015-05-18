@@ -60,7 +60,9 @@ class RecorderController < UIViewController
 
     # Save Clip Button
     @save_button = UIButton.buttonWithType(UIButtonTypeSystem)
-    @save_button.setTitle("Save", forState:UIControlStateNormal)
+    @save_button.setTitle("Save As New", forState:UIControlStateNormal)
+    @save_button.setTitleColor(UIColor.redColor, forState:UIControlStateNormal)
+    @save_button.titleLabel.font = UIFont.systemFontOfSize(18)
     @save_button.sizeToFit
     @save_button.frame = CGRect.new([view_center - @save_button.frame.size.width/2, 180],@save_button.frame.size)
     @save_button.addTarget(self, action:"save_clip", forControlEvents:UIControlEventTouchUpInside)
@@ -180,8 +182,8 @@ class RecorderController < UIViewController
   end
 
   def fetch_files
-    file_manager = NSFileManager.defaultManager
-    @recordings = file_manager.contentsOfDirectoryAtPath(App.documents_path, error:nil)
+    @file_manager ||= NSFileManager.defaultManager
+    @recordings = @file_manager.contentsOfDirectoryAtPath(App.documents_path, error:nil)
   end
 
   def tableView(tableView, numberOfRowsInSection: section)
@@ -189,12 +191,11 @@ class RecorderController < UIViewController
   end
 
   def tableView(tableView, cellForRowAtIndexPath: indexPath)
-    @reuseIdentifier ||= "CELL_IDENTIFIER"
-    cell = tableView.dequeueReusableCellWithIdentifier(@reuseIdentifier) || begin
-      UITableViewCell.alloc.initWithStyle(UITableViewCellStyleDefault, reuseIdentifier: @reuseIdentifier)
+    @cell_id ||= "CELL_IDENTIFIER"
+    cell = tableView.dequeueReusableCellWithIdentifier(@cell_id) || begin
+      UITableViewCell.alloc.initWithStyle(UITableViewCellStyleDefault, reuseIdentifier: @cell_id)
+      cell.textLabel.text = @recordings[indexPath.row]
     end
-    cell.textLabel.text = @recordings[indexPath.row]
-    cell
   end
 
   def tableView(tableView, didSelectRowAtIndexPath:indexPath)
