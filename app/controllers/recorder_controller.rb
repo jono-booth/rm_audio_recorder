@@ -39,8 +39,33 @@ class RecorderController < UIViewController
     @play_button.addTarget(self, action:"play_recording", forControlEvents:UIControlEventTouchUpInside)
     self.view.addSubview(@play_button)
 
+    # Sample Length
+    sample_length_position = [(self.view.frame.size.width / 2) - 165, 180], [165, 40]
+    @sample_length_min_slider = UISlider.alloc.initWithFrame(sample_length_position)
+    @sample_length_min_slider.addTarget(self, action:"adjust_start_position", forControlEvents:UIControlEventValueChanged)
+    @sample_length_min_slider.maximumValue = 50
+    @sample_length_min_slider.value = 0
+    @sample_length_min_slider.minimumTrackTintColor = UIColor.blackColor
+    @sample_length_min_slider.maximumTrackTintColor = UIColor.blackColor
+    self.view.addSubview(@sample_length_min_slider)
+
+    sample_length_position = [(self.view.frame.size.width / 2) - 5, 180], [165, 40]
+    @sample_length_max_slider = UISlider.alloc.initWithFrame(sample_length_position)
+    @sample_length_max_slider.maximumValue = 100
+    @sample_length_max_slider.minimumValue = 50
+    @sample_length_max_slider.setValue(@sample_length_max_slider.maximumValue)
+    @sample_length_max_slider.minimumTrackTintColor = UIColor.blackColor
+    @sample_length_max_slider.maximumTrackTintColor = UIColor.blackColor
+    self.view.addSubview(@sample_length_max_slider)
+
+    @sample_length_label = UILabel.alloc.initWithFrame(CGRectZero)
+    @sample_length_label.text = "Sample Length"
+    @sample_length_label.sizeToFit
+    @sample_length_label.center = [self.view.frame.size.width / 2, 170]
+    self.view.addSubview(@sample_length_label)
+
     # Reverb Volume Slider
-    reverb_slider_position = [(self.view.frame.size.width / 2) - 160, 180], [320, 40]
+    reverb_slider_position = [(self.view.frame.size.width / 2) - 160, 250], [320, 40]
     @reverb_slider = UISlider.alloc.initWithFrame(reverb_slider_position)
     @reverb_slider.addTarget(self, action:"adjust_reverb", forControlEvents:UIControlEventValueChanged)
     @reverb_slider.maximumValue = 1
@@ -50,11 +75,11 @@ class RecorderController < UIViewController
     @reverb_volume_label = UILabel.alloc.initWithFrame(CGRectZero)
     @reverb_volume_label.text = "Reverb Volume"
     @reverb_volume_label.sizeToFit
-    @reverb_volume_label.center = [self.view.frame.size.width / 2, 170]
+    @reverb_volume_label.center = [self.view.frame.size.width / 2, 240]
     self.view.addSubview(@reverb_volume_label)
 
-    # Reverb Volume Slider
-    reverb_time_slider_position = [(self.view.frame.size.width / 2) - 160, 250], [320, 40]
+    # Reverb Time Slider
+    reverb_time_slider_position = [(self.view.frame.size.width / 2) - 160, 310], [320, 40]
     @reverb_time_slider = UISlider.alloc.initWithFrame(reverb_time_slider_position)
     @reverb_time_slider.addTarget(self, action:"adjust_reverb_time", forControlEvents:UIControlEventValueChanged)
     @reverb_time_slider.maximumValue = 1
@@ -65,12 +90,15 @@ class RecorderController < UIViewController
     @reverb_time_label = UILabel.alloc.initWithFrame(CGRectZero)
     @reverb_time_label.text = "Reverb Time"
     @reverb_time_label.sizeToFit
-    @reverb_time_label.center = [self.view.frame.size.width / 2, 240]
+    @reverb_time_label.center = [self.view.frame.size.width / 2, 300]
     self.view.addSubview(@reverb_time_label)
 
   end
 
   def start_recording
+    @sample_length_min_slider.setValue(@sample_length_min_slider.minimumValue)
+    @sample_length_max_slider.setValue(@sample_length_max_slider.maximumValue)
+
     self.view.addSubview(@stop_button)
     @record_button.removeFromSuperview
 
@@ -102,7 +130,11 @@ class RecorderController < UIViewController
 
   def play_recording
     @player = AVPlayer.alloc.initWithURL(local_file)
+    @player.seekToTime(@seek_to_start_time, toleranceBefore:KCMTimeZero, toleranceAfter:KCMTimeZero) if @seek_to_start_time
     @player.play
+    @player.addPeriodicTimeObserverForInterval(CMTimeMake(1, 20), queue:nil, usingBlock:lambda do |time|
+      stop_at_end_time()
+    end)
     @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
   end
 
@@ -120,6 +152,24 @@ class RecorderController < UIViewController
 
   def adjust_reverb_time
     @reverb_time = @reverb_time_slider.value
+  end
+
+  def adjust_start_position
+    if @player
+      duration = @player.currentItem.asset.duration
+      duration_in_seconds = CMTimeGetSeconds(@player.currentItem.asset.duration)
+      start_time = (@sample_length_min_slider.value / 100) * duration_in_seconds
+      @seek_to_start_time = CMTimeMakeWithSeconds(start_time, duration.timescale)
+    end
+  end
+
+  def stop_at_end_time
+    duration_in_seconds = CMTimeGetSeconds(@player.currentItem.asset.duration)
+    value = CMTimeGetSeconds(@player.currentTime)
+    if value > ((@sample_length_max_slider.value / 100) * duration_in_seconds)
+      @player.pause
+      @reverb.pause
+    end
   end
 
   def local_file
