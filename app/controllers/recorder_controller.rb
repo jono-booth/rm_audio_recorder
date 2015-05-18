@@ -42,7 +42,7 @@ class RecorderController < UIViewController
     # Sample Length
     sample_length_position = [(self.view.frame.size.width / 2) - 160, 180], [160, 40]
     @sample_length_min_slider = UISlider.alloc.initWithFrame(sample_length_position)
-    #   @sample_length.addTarget(self, action:"adjust_reverb_time", forControlEvents:UIControlEventValueChanged)
+    @sample_length_min_slider.addTarget(self, action:"adjust_start_position", forControlEvents:UIControlEventValueChanged)
     @sample_length_min_slider.maximumValue = 500
     @sample_length_min_slider.value = 0
     self.view.addSubview(@sample_length_min_slider)
@@ -51,7 +51,7 @@ class RecorderController < UIViewController
     @sample_length_max_slider = UISlider.alloc.initWithFrame(sample_length_position)
     #   @sample_length.addTarget(self, action:"adjust_reverb_time", forControlEvents:UIControlEventValueChanged)
     @sample_length_max_slider.maximumValue = 500
-    @sample_length_max_slider.value = 100
+    @sample_length_max_slider.value = 500
     self.view.addSubview(@sample_length_max_slider)
 
     @sample_length_label = UILabel.alloc.initWithFrame(CGRectZero)
@@ -92,6 +92,9 @@ class RecorderController < UIViewController
   end
 
   def start_recording
+    @sample_length_min_slider.setValue(@sample_length_min_slider.minimumValue)
+    @sample_length_max_slider.setValue(@sample_length_max_slider.maximumValue)
+
     self.view.addSubview(@stop_button)
     @record_button.removeFromSuperview
 
@@ -141,6 +144,10 @@ class RecorderController < UIViewController
 
   def adjust_reverb_time
     @reverb_time = @reverb_time_slider.value
+  end
+
+  def adjust_start_position
+
   end
 
   def local_file
