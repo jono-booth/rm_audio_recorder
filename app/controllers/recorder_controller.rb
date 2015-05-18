@@ -31,13 +31,13 @@ class RecorderController < UIViewController
     @stop_button.addTarget(self, action:"stop_recording", forControlEvents:UIControlEventTouchUpInside)
 
     # Play Button
-    play_button_position = CGRect.new([(self.view.frame.size.width / 2) - 50, 110], [100, 40])
-    @play_button = UIButton.buttonWithType(UIButtonTypeSystem)
-    @play_button.setTitle("Play Sound", forState:UIControlStateNormal)
-    @play_button.sizeToFit
-    @play_button.frame = play_button_position
-    @play_button.addTarget(self, action:"play_recording", forControlEvents:UIControlEventTouchUpInside)
-    self.view.addSubview(@play_button)
+#   play_button_position = CGRect.new([(self.view.frame.size.width / 2) - 50, 110], [100, 40])
+#   @play_button = UIButton.buttonWithType(UIButtonTypeSystem)
+#   @play_button.setTitle("Play Sound", forState:UIControlStateNormal)
+#   @play_button.sizeToFit
+#   @play_button.frame = play_button_position
+#   @play_button.addTarget(self, action:"play_recording", forControlEvents:UIControlEventTouchUpInside)
+#   self.view.addSubview(@play_button)
 
     # Sample Length
     sample_length_position = [(self.view.frame.size.width / 2) - 165, 180], [165, 40]
@@ -93,6 +93,14 @@ class RecorderController < UIViewController
     @reverb_time_label.center = [self.view.frame.size.width / 2, 300]
     self.view.addSubview(@reverb_time_label)
 
+    table_view_frame = [(self.view.frame.size.width / 2) - 160, 380], [320, 240]
+    @table = UITableView.alloc.initWithFrame(table_view_frame)
+    @table.dataSource = self
+    @table.delegate = self
+    self.view.addSubview(@table)
+
+    fetch_files
+
   end
 
   def start_recording
@@ -107,7 +115,7 @@ class RecorderController < UIViewController
     @session.setCategory AVAudioSessionCategoryPlayAndRecord, error:err_ptr
     return handleAudioError(err_ptr[0]) if err_ptr[0]
 
-    @recorder = AVAudioRecorder.alloc.initWithURL local_file, settings:settings, error:nil
+    @recorder = AVAudioRecorder.alloc.initWithURL new_file, settings:settings, error:nil
     @recorder.setMeteringEnabled(true)
     @recorder.delegate = self;
 
@@ -118,24 +126,55 @@ class RecorderController < UIViewController
       raise "prepareToRecord " unless err_ptr[0]
       return handleAudioError(err_ptr[0])
     end
-
   end
 
   def stop_recording
-    @recording = false
     self.view.addSubview(@record_button)
     @stop_button.removeFromSuperview
     @recorder.stop if @recorder
+    fetch_files
+    @table.reloadData
   end
 
-  def play_recording
-    @player = AVPlayer.alloc.initWithURL(local_file)
+  def new_file
+    number = @recordings.size+1
+    filename = App.documents_path + '/Recording_' + number.to_s + '.aif'
+    NSURL.fileURLWithPath(filename)
+  end
+
+  def fetch_files
+    file_manager = NSFileManager.defaultManager
+    @recordings = file_manager.contentsOfDirectoryAtPath(App.documents_path, error:nil)
+  end
+
+  def tableView(tableView, numberOfRowsInSection: section)
+    @recordings.size
+  end
+
+  def tableView(tableView, cellForRowAtIndexPath: indexPath)
+    @reuseIdentifier ||= "CELL_IDENTIFIER"
+    cell = tableView.dequeueReusableCellWithIdentifier(@reuseIdentifier) || begin
+      UITableViewCell.alloc.initWithStyle(UITableViewCellStyleDefault, reuseIdentifier: @reuseIdentifier)
+    end
+    cell.textLabel.text = @recordings[indexPath.row]
+    cell
+  end
+
+  def tableView(tableView, didSelectRowAtIndexPath:indexPath)
+    tableView.deselectRowAtIndexPath(indexPath, animated: true)
+    play_recording(@recordings[indexPath.row])
+  end
+
+
+  def play_recording filename
+    file = NSURL.fileURLWithPath(App.documents_path + '/' + filename)
+    @player = AVPlayer.alloc.initWithURL file
     @player.seekToTime(@seek_to_start_time, toleranceBefore:KCMTimeZero, toleranceAfter:KCMTimeZero) if @seek_to_start_time
     @player.play
     @player.addPeriodicTimeObserverForInterval(CMTimeMake(1, 20), queue:nil, usingBlock:lambda do |time|
       stop_at_end_time()
     end)
-    @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
+#    @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
   end
 
   def reverb_track
@@ -167,13 +206,9 @@ class RecorderController < UIViewController
     duration_in_seconds = CMTimeGetSeconds(@player.currentItem.asset.duration)
     value = CMTimeGetSeconds(@player.currentTime)
     if value > ((@sample_length_max_slider.value / 100) * duration_in_seconds)
-      @player.pause
-      @reverb.pause
+      @player.pause if @player
+      @reverb.pause if @reverb
     end
-  end
-
-  def local_file
-    NSURL.fileURLWithPath(App.documents_path + "/record.aif")
   end
 
   def settings
