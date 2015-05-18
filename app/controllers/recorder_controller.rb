@@ -40,18 +40,17 @@ class RecorderController < UIViewController
     self.view.addSubview(@play_button)
 
     # Sample Length
-    sample_length_position = [(self.view.frame.size.width / 2) - 160, 180], [160, 40]
+    sample_length_position = [(self.view.frame.size.width / 2) - 165, 180], [165, 40]
     @sample_length_min_slider = UISlider.alloc.initWithFrame(sample_length_position)
     @sample_length_min_slider.addTarget(self, action:"adjust_start_position", forControlEvents:UIControlEventValueChanged)
-    @sample_length_min_slider.maximumValue = 500
+    @sample_length_min_slider.maximumValue = 50
     @sample_length_min_slider.value = 0
     self.view.addSubview(@sample_length_min_slider)
 
-    sample_length_position = [(self.view.frame.size.width / 2), 180], [160, 40]
+    sample_length_position = [(self.view.frame.size.width / 2) - 5, 180], [165, 40]
     @sample_length_max_slider = UISlider.alloc.initWithFrame(sample_length_position)
-    #   @sample_length.addTarget(self, action:"adjust_reverb_time", forControlEvents:UIControlEventValueChanged)
-    @sample_length_max_slider.maximumValue = 500
-    @sample_length_max_slider.value = 500
+    @sample_length_max_slider.maximumValue = 50
+    @sample_length_max_slider.setValue(@sample_length_max_slider.maximumValue)
     self.view.addSubview(@sample_length_max_slider)
 
     @sample_length_label = UILabel.alloc.initWithFrame(CGRectZero)
@@ -126,6 +125,7 @@ class RecorderController < UIViewController
 
   def play_recording
     @player = AVPlayer.alloc.initWithURL(local_file)
+    @player.seekToTime(@seek_to_start_time, toleranceBefore:KCMTimeZero, toleranceAfter:KCMTimeZero) if @seek_to_start_time
     @player.play
     @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
   end
@@ -147,7 +147,11 @@ class RecorderController < UIViewController
   end
 
   def adjust_start_position
-
+    if @player
+      duration = @player.currentItem.asset.duration
+      start_time = (@sample_length_min_slider.value / 100) * CMTimeGetSeconds(@player.currentItem.asset.duration)
+      @seek_to_start_time = CMTimeMakeWithSeconds(start_time, duration.timescale)
+    end
   end
 
   def local_file
