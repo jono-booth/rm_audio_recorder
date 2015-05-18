@@ -45,12 +45,16 @@ class RecorderController < UIViewController
     @sample_length_min_slider.addTarget(self, action:"adjust_start_position", forControlEvents:UIControlEventValueChanged)
     @sample_length_min_slider.maximumValue = 50
     @sample_length_min_slider.value = 0
+    @sample_length_min_slider.minimumTrackTintColor = UIColor.blackColor
+    @sample_length_min_slider.maximumTrackTintColor = UIColor.blackColor
     self.view.addSubview(@sample_length_min_slider)
 
     sample_length_position = [(self.view.frame.size.width / 2) - 5, 180], [165, 40]
     @sample_length_max_slider = UISlider.alloc.initWithFrame(sample_length_position)
     @sample_length_max_slider.maximumValue = 50
     @sample_length_max_slider.setValue(@sample_length_max_slider.maximumValue)
+    @sample_length_max_slider.minimumTrackTintColor = UIColor.blackColor
+    @sample_length_max_slider.maximumTrackTintColor = UIColor.blackColor
     self.view.addSubview(@sample_length_max_slider)
 
     @sample_length_label = UILabel.alloc.initWithFrame(CGRectZero)
