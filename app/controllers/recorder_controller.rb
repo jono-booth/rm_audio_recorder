@@ -194,8 +194,9 @@ class RecorderController < UIViewController
     @cell_id ||= "CELL_IDENTIFIER"
     cell = tableView.dequeueReusableCellWithIdentifier(@cell_id) || begin
       UITableViewCell.alloc.initWithStyle(UITableViewCellStyleDefault, reuseIdentifier: @cell_id)
-      cell.textLabel.text = @recordings[indexPath.row]
     end
+    cell.textLabel.text = @recordings[indexPath.row]
+    cell
   end
 
   def tableView(tableView, didSelectRowAtIndexPath:indexPath)
