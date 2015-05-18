@@ -59,15 +59,6 @@ class RecorderController < UIViewController
     self.view.addSubview(@sample_length_max_slider)
 
     # Save Clip Button
-#   @save_button = UIButton.buttonWithType(UIButtonTypeSystem)
-#   @save_button.setTitle("Save", forstate:UIControlStateNormal)
-#   @save_button.sizeToFit
-#   @save_button.backgroundColor = UIColor.redColor
-#   @save_button.setTitleColor(UIColor.redColor, forState:UIControlStateNormal)
-#   @save_button.titleLabel.font = UIFont.systemFontOfSize(14)
-#   @save_button.frame = CGRect.new([(self.view.frame.size.width / 2) - 50, 180], @save_button.frame.size)
-#   self.view.addSubview(@save_button)
-
     @save_button = UIButton.buttonWithType(UIButtonTypeSystem)
     @save_button.setTitle("Save", forState:UIControlStateNormal)
     @save_button.sizeToFit
@@ -75,37 +66,7 @@ class RecorderController < UIViewController
     @save_button.addTarget(self, action:"save_clip", forControlEvents:UIControlEventTouchUpInside)
     self.view.addSubview(@save_button)
 
-
-    # Reverb Volume Slider
-    @reverb_volume_label = UILabel.alloc.initWithFrame(CGRectZero)
-    @reverb_volume_label.text = "Reverb Volume"
-    @reverb_volume_label.sizeToFit
-    @reverb_volume_label.center = [view_center, 240]
-    self.view.addSubview(@reverb_volume_label)
-
-    reverb_slider_position = [view_center - 160, 250], [320, 40]
-    @reverb_slider = UISlider.alloc.initWithFrame(reverb_slider_position)
-    @reverb_slider.addTarget(self, action:"adjust_reverb", forControlEvents:UIControlEventValueChanged)
-    @reverb_slider.maximumValue = 1
-    @reverb_volume = 0
-    self.view.addSubview(@reverb_slider)
-
-    # Reverb Time Slider
-    @reverb_time_label = UILabel.alloc.initWithFrame(CGRectZero)
-    @reverb_time_label.text = "Reverb Time"
-    @reverb_time_label.sizeToFit
-    @reverb_time_label.center = [view_center, 300]
-    self.view.addSubview(@reverb_time_label)
-
-    reverb_time_slider_position = [view_center - 160, 310], [320, 40]
-    @reverb_time_slider = UISlider.alloc.initWithFrame(reverb_time_slider_position)
-    @reverb_time_slider.addTarget(self, action:"adjust_reverb_time", forControlEvents:UIControlEventValueChanged)
-    @reverb_time_slider.maximumValue = 1
-    @reverb_time = 0.2
-    @reverb_time_slider.value = @reverb_time
-    self.view.addSubview(@reverb_time_slider)
-
-    table_view_frame = [view_center - 160, 380], [320, 240]
+    table_view_frame = [view_center - 160, 210], [320, self.view.frame.size.height - 210]
     @table = UITableView.alloc.initWithFrame(table_view_frame)
     @table.dataSource = self
     @table.delegate = self
@@ -191,6 +152,27 @@ class RecorderController < UIViewController
     end
   end
 
+  def adjust_start_position
+    if @player
+      start_time = (@sample_length_min_slider.value / 100) * @duration_in_seconds
+      @start_time = CMTimeMakeWithSeconds(start_time, @duration.timescale)
+    end
+  end
+
+  def adjust_end_position
+    if @player
+      end_time = (@sample_length_max_slider.value / 100) * @duration_in_seconds
+      @end_time = CMTimeMakeWithSeconds(end_time, @duration.timescale)
+    end
+  end
+
+  def stop_at_end_time value
+    if value > ((@sample_length_max_slider.value / 100) * @duration_in_seconds)
+      @player.pause if @player
+      @reverb.pause if @reverb
+    end
+  end
+
   def new_file
     number = @recordings.size+1
     filename = App.documents_path + '/Recording_' + number.to_s + '.aif'
@@ -218,46 +200,6 @@ class RecorderController < UIViewController
   def tableView(tableView, didSelectRowAtIndexPath:indexPath)
     tableView.deselectRowAtIndexPath(indexPath, animated: true)
     play_recording(@recordings[indexPath.row])
-  end
-
-
-  def reverb_track
-    asset_url = @player.currentItem.asset.URL
-    @reverb = AVPlayer.alloc.initWithURL(asset_url)
-    @reverb.seekToTime(@start_time, toleranceBefore:KCMTimeZero, toleranceAfter:KCMTimeZero)
-    @reverb.setVolume @reverb_volume
-    @reverb.play
-  end
-
-  def adjust_reverb
-    @reverb_volume = @reverb_slider.value
-    p @reverb_slider.value
-    @reverb.setVolume @reverb_volume if @reverb
-  end
-
-  def adjust_reverb_time
-    @reverb_time = @reverb_time_slider.value
-  end
-
-  def adjust_start_position
-    if @player
-      start_time = (@sample_length_min_slider.value / 100) * @duration_in_seconds
-      @start_time = CMTimeMakeWithSeconds(start_time, @duration.timescale)
-    end
-  end
-
-  def adjust_end_position
-    if @player
-      end_time = (@sample_length_max_slider.value / 100) * @duration_in_seconds
-      @end_time = CMTimeMakeWithSeconds(end_time, @duration.timescale)
-    end
-  end
-
-  def stop_at_end_time value
-    if value > ((@sample_length_max_slider.value / 100) * @duration_in_seconds)
-      @player.pause if @player
-      @reverb.pause if @reverb
-    end
   end
 
   def settings
