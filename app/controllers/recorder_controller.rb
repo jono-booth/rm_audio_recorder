@@ -127,7 +127,7 @@ class RecorderController < UIViewController
       value = CMTimeGetSeconds(@player.currentTime)
       stop_at_end_time(value)
     end)
-    @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
+#    @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
   end
 
   def save_clip
