@@ -13,7 +13,6 @@ class RecorderController < UIViewController
 
     # Button positions
     main_button_position = CGRect.new([(self.view.frame.size.width / 2) - 20, 70], [40, 40])
-    play_button_position = CGRect.new([(self.view.frame.size.width / 2) - 50, 110], [100, 40])
 
     # Record Button
     @record_button = UIButton.buttonWithType(UIButtonTypeSystem)
@@ -32,12 +31,43 @@ class RecorderController < UIViewController
     @stop_button.addTarget(self, action:"stop_recording", forControlEvents:UIControlEventTouchUpInside)
 
     # Play Button
+    play_button_position = CGRect.new([(self.view.frame.size.width / 2) - 50, 110], [100, 40])
     @play_button = UIButton.buttonWithType(UIButtonTypeSystem)
     @play_button.setTitle("Play Sound", forState:UIControlStateNormal)
     @play_button.sizeToFit
     @play_button.frame = play_button_position
     @play_button.addTarget(self, action:"play_recording", forControlEvents:UIControlEventTouchUpInside)
     self.view.addSubview(@play_button)
+
+    # Reverb Volume Slider
+    reverb_slider_position = [(self.view.frame.size.width / 2) - 160, 180], [320, 40]
+    @reverb_slider = UISlider.alloc.initWithFrame(reverb_slider_position)
+    @reverb_slider.addTarget(self, action:"adjust_reverb", forControlEvents:UIControlEventValueChanged)
+    @reverb_slider.maximumValue = 1
+    @reverb_volume = 0
+    self.view.addSubview(@reverb_slider)
+
+    @reverb_volume_label = UILabel.alloc.initWithFrame(CGRectZero)
+    @reverb_volume_label.text = "Reverb Volume"
+    @reverb_volume_label.sizeToFit
+    @reverb_volume_label.center = [self.view.frame.size.width / 2, 170]
+    self.view.addSubview(@reverb_volume_label)
+
+    # Reverb Volume Slider
+    reverb_time_slider_position = [(self.view.frame.size.width / 2) - 160, 250], [320, 40]
+    @reverb_time_slider = UISlider.alloc.initWithFrame(reverb_time_slider_position)
+    @reverb_time_slider.addTarget(self, action:"adjust_reverb_time", forControlEvents:UIControlEventValueChanged)
+    @reverb_time_slider.maximumValue = 1
+    @reverb_time = 0.2
+    @reverb_time_slider.value = @reverb_time
+    self.view.addSubview(@reverb_time_slider)
+
+    @reverb_time_label = UILabel.alloc.initWithFrame(CGRectZero)
+    @reverb_time_label.text = "Reverb Time"
+    @reverb_time_label.sizeToFit
+    @reverb_time_label.center = [self.view.frame.size.width / 2, 240]
+    self.view.addSubview(@reverb_time_label)
+
   end
 
   def start_recording
@@ -45,13 +75,11 @@ class RecorderController < UIViewController
     @record_button.removeFromSuperview
 
     err_ptr = Pointer.new :object
-
-    session = AVAudioSession.sharedInstance
-    session.setCategory AVAudioSessionCategoryRecord, error:err_ptr
-
+    @session = AVAudioSession.sharedInstance
+    @session.setCategory AVAudioSessionCategoryPlayAndRecord, error:err_ptr
     return handleAudioError(err_ptr[0]) if err_ptr[0]
 
-    @recorder = AVAudioRecorder.alloc.initWithURL local_file, settings:settings, error:err_ptr
+    @recorder = AVAudioRecorder.alloc.initWithURL local_file, settings:settings, error:nil
     @recorder.setMeteringEnabled(true)
     @recorder.delegate = self;
 
@@ -73,23 +101,37 @@ class RecorderController < UIViewController
   end
 
   def play_recording
-    BW::Media.play(local_file) do |media_player|
-      @playing = true
-#      media_player.view.frame = [[10, 100], [100, 100]]
-#      self.view.addSubview media_player.view
-    end
+    @player = AVPlayer.alloc.initWithURL(local_file)
+    @player.play
+    @timer = NSTimer.scheduledTimerWithTimeInterval(@reverb_time, target:self, selector:'reverb_track', userInfo:nil, repeats:false)
+  end
+
+  def reverb_track
+    @reverb = AVPlayer.alloc.initWithURL(local_file)
+    @reverb.setVolume @reverb_volume
+    @reverb.play
+  end
+
+  def adjust_reverb
+    @reverb_volume = @reverb_slider.value
+    p @reverb_slider.value
+    @reverb.setVolume @reverb_volume if @reverb
+  end
+
+  def adjust_reverb_time
+    @reverb_time = @reverb_time_slider.value
   end
 
   def local_file
-    NSURL.fileURLWithPath(App.documents_path + "/record.caf")
+    NSURL.fileURLWithPath(App.documents_path + "/record.aif")
   end
 
   def settings
     @settings ||= {
-      :AVFormatIDKey => KAudioFormatLinearPCM,
-      :AVNumberOfChannelsKey => 1,
-      :AVEncoderBitRateKey => 2,
-      :AVSampleRateKey => nil
+      AVFormatIDKey: KAudioFormatLinearPCM,
+      AVNumberOfChannelsKey: 1,
+      AVEncoderBitRateKey: 16,
+      AVSampleRateKey: 44100.0
     }
   end
 
